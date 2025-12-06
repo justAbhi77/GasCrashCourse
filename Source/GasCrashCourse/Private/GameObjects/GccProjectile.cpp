@@ -2,7 +2,6 @@
 
 
 #include "GameObjects/GccProjectile.h"
-#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/GccPlayerCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"

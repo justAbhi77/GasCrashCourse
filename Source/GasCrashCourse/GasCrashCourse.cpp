@@ -7,5 +7,6 @@ IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, GasCrashCourse, "GasCrash
 
 namespace GasCrashTags
 {
+	// Define the actual value of the "Player" tag.
 	const FName Player = FName("Player");
 }
