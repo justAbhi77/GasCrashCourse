@@ -2,54 +2,56 @@
 
 #include "Utils/DebugUtil.h"
 
-// Log Categories
+// Log categories
 DEFINE_LOG_CATEGORY(LogGcc);
 DEFINE_LOG_CATEGORY(LogOthers);
 
-// Console Variables
-static TAutoConsoleVariable CVarDebugGcc(TEXT("Gcc.Debug"), 1, TEXT("Master Debug Toggle For Gas Crash Course"), ECVF_Default);
+// Console variables acting as runtime debug toggles
+static TAutoConsoleVariable CVarDebugGcc(TEXT("Gcc.Debug"), 1, TEXT("Master Debug Toggle for Gas Crash Course"));
+static TAutoConsoleVariable CVarDebugPrintToScreen(TEXT("Gcc.Debug.PrintToScreen"), 1, TEXT("Enable/Disable Print To Screen"));
+static TAutoConsoleVariable CVarDebugPrintToLog(TEXT("Gcc.Debug.PrintToLog"), 1, TEXT("Enable/Disable Print To Log"));
+static TAutoConsoleVariable CVarDebugOthers(TEXT("Gcc.Debug.Others"), 1, TEXT("Enable other debug prints"));
 
-static TAutoConsoleVariable CVarDebugPrintToScreen(TEXT("Gcc.Debug.PrintToScreen"), 1, TEXT("Enable/Disable Print To Screen"), ECVF_Default);
-static TAutoConsoleVariable CVarDebugPrintToLog(TEXT("Gcc.Debug.PrintToLog"), 1, TEXT("Enable/Disable Print To Log"), ECVF_Default);
-static TAutoConsoleVariable CVarDebugOthers(TEXT("Gcc.Debug.Others"), 1, TEXT("Any other debug toggle"), ECVF_Default);
 
-
-// Timestamp (Real Clock Time - Option B)
-
+// Timestamp (Real Clock Time)
 FString UDebugUtil::BuildTimestamp()
 {
 	const FDateTime Now = FDateTime::Now();
 	return Now.ToString(TEXT("%H:%M:%S.%ms"));
 }
 
-// Category Color
+// Category-Based Debug Color
 FColor UDebugUtil::GetColorForCategory(const EDebugCategories Category)
 {
 	switch(Category)
 	{
 		case EDebugCategories::Edc_Gcc : return FColor::Cyan;
 
-		case EDebugCategories::Edc_Others : return FColor::White;
-
-		default: return FColor::White;
+		case EDebugCategories::Edc_Others:
+		default:
+			return FColor::White;
 	}
 }
 
-// Category Filter
+// Category Filtering Based on Console Vars
 bool UDebugUtil::IsCategoryEnabled(const EDebugCategories Category)
 {
-	if(CVarDebugGcc.GetValueOnAnyThread() == 0) return false;
+	// Master toggle
+	if(CVarDebugGcc.GetValueOnAnyThread() == 0)
+		return false;
 
 	switch(Category)
 	{
 		case EDebugCategories::Edc_Gcc : return true;
 
-		case EDebugCategories::Edc_Others: return CVarDebugOthers.GetValueOnAnyThread() > 0;
+		case EDebugCategories::Edc_Others : return CVarDebugOthers.GetValueOnAnyThread() != 0;
+
+		default:
+			return false;
 	}
-	return false;
 }
 
-// Unified Debug Printer
+// Unified Debug Message Printer
 void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Category, const FLinearColor LinearColor, const float Time, const char* FunctionName, const int Line)
 {
 #if !UE_BUILD_SHIPPING
@@ -57,36 +59,42 @@ void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Ca
 	if(!IsCategoryEnabled(Category))
 		return;
 
-	// Build prefix
+	// Build all metadata
 	const FString Timestamp = BuildTimestamp();
-
-	// Extract class/function from PrettyFunction: Example "void AMyActor::FooBar()"
 	const FString FunctionStr = ANSI_TO_TCHAR(FunctionName);
 	const FString EnumVal = UEnum::GetValueAsString(Category);
 
-	const FString FinalMsg = FString::Printf(TEXT("[%s][%s][%s at %d] %s"), *Timestamp, *EnumVal, *FunctionStr, Line, *Msg);
+	// Final formatted output
+	const FString FinalMsg = FString::Printf(TEXT("[%s][%s][%s:%d] %s"), *Timestamp, *EnumVal, *FunctionStr, Line, *Msg);
 
-	// Output Log
-	if(!CVarDebugPrintToLog.GetValueOnAnyThread() == 0)
+	// Log to Output Log
+	if(CVarDebugPrintToLog.GetValueOnAnyThread() != 0)
+	{
 		switch(Category)
 		{
-			case EDebugCategories::Edc_Gcc:
+			case EDebugCategories::Edc_Gcc :
 				UE_LOG(LogGcc, Log, TEXT("%s"), *FinalMsg);
 				break;
 
 			case EDebugCategories::Edc_Others :
+			default:
 				UE_LOG(LogOthers, Log, TEXT("%s"), *FinalMsg);
 				break;
 		}
+	}
 
-	// On-Screen Message
-	if(!CVarDebugPrintToScreen.GetValueOnAnyThread() == 0 && GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, Time, LinearColor.ToFColor(false), FinalMsg);
+	// Print on screen
+	if(CVarDebugPrintToScreen.GetValueOnAnyThread() != 0 && GEngine)
+	{
+		const FColor ScreenColor = LinearColor.ToFColor(false);
+		GEngine->AddOnScreenDebugMessage(-1, Time, ScreenColor, FinalMsg);
+	}
 
 #endif
 }
 
+// Blueprint Wrapper
 void UDebugUtil::PrintDebugMessageBP(const FString& Msg, const FString& Function, const int Line, const EDebugCategories Category, const FLinearColor Color, const float Time)
 {
-    PrintDebugMessage(Msg, Category, Color, Time, TCHAR_TO_ANSI(*Function), Line);
+	PrintDebugMessage(Msg, Category, Color, Time, TCHAR_TO_ANSI(*Function), Line);
 }
