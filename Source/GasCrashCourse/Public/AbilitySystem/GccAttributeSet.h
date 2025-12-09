@@ -19,28 +19,31 @@
  * Use this for copying the preview and delete $ sign.
  */
 #define ATTRIBUTE_PROPERTY(PropertyName) \
-$UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_##PropertyName, Category = "Attributes") \
-$FGameplayAttributeData PropertyName; \
-$ATTRIBUTE_ACCESSORS(ThisClass, PropertyName); \
-$UFUNCTION() void OnRep_##PropertyName(const FGameplayAttributeData& OldValue) const { $GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, PropertyName, OldValue); }
+	$UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_##PropertyName, Category = "Attributes") \
+	$FGameplayAttributeData PropertyName; \
+	$ATTRIBUTE_ACCESSORS(ThisClass, PropertyName); \
+	$UFUNCTION() void OnRep_##PropertyName(const FGameplayAttributeData& OldValue) const { $GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, PropertyName, OldValue); }
 
-// Macro to simplify replication declaration
+// Macro for replication
 #define REGISTER_REPLICATED_ATTRIBUTE(Attribute) \
-DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, Attribute, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, Attribute, COND_None, REPNOTIFY_Always)
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAttributesInitialized);
 
 /**
- *
+ * AttributeSet for GAS Crash project
+ * Handles replication, clamping, death events and initialization notification
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API UGccAttributeSet : public UAttributeSet
 {
 	GENERATED_BODY()
+
 public:
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
 	UPROPERTY(BlueprintAssignable)
 	FAttributesInitialized OnAttributesInitialized;
@@ -54,25 +57,21 @@ public:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Attributes")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(ThisClass, Health);
-
 	UFUNCTION() void OnRep_Health(const FGameplayAttributeData& OldValue) const { GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, Health, OldValue); }
 
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Attributes")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(ThisClass, MaxHealth);
-
 	UFUNCTION() void OnRep_MaxHealth(const FGameplayAttributeData& OldValue) const { GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, MaxHealth, OldValue); }
 
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Mana, Category = "Attributes")
 	FGameplayAttributeData Mana;
 	ATTRIBUTE_ACCESSORS(ThisClass, Mana);
-
 	UFUNCTION() void OnRep_Mana(const FGameplayAttributeData& OldValue) const { GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, Mana, OldValue); }
 
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxMana, Category = "Attributes")
 	FGameplayAttributeData MaxMana;
 	ATTRIBUTE_ACCESSORS(ThisClass, MaxMana);
-
 	UFUNCTION() void OnRep_MaxMana(const FGameplayAttributeData& OldValue) const { GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, MaxMana, OldValue); }
 
 	void PostAttributeInitialized();

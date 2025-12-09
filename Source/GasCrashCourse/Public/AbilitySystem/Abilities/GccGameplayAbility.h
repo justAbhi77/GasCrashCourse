@@ -8,16 +8,16 @@
 
 /**
  * Base Gameplay Ability class for GAS Crash Course.
- * Adds optional debug visualization and unified logging for ability lifecycle.
+ * Adds optional debug visualization.
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API UGccGameplayAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
 
 public:
 	// Enables debug for the ability
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="GasCrash|Debug")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gas Crash|Debug")
 	bool bDrawDebugs = false;
 
 	// Called when the ability is activated

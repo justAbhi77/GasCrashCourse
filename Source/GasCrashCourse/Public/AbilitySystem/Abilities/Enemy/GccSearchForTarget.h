@@ -19,19 +19,22 @@ class AAIController;
 class UGccWaitGameplayEvent;
 
 /**
- *
+ * Ability used by Npcs to search, move toward, and attack nearby valid targets(player)
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API UGccSearchForTarget : public UGccGameplayAbility
 {
 	GENERATED_BODY()
+
 public:
 	UGccSearchForTarget();
+
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 	TWeakObjectPtr<AGccEnemyCharacter> OwningEnemy;
 	TWeakObjectPtr<AAIController> OwningAIController;
 	TWeakObjectPtr<AGccBaseCharacter> TargetBaseCharacter;
+
 private:
 	UPROPERTY()
 	TObjectPtr<UGccWaitGameplayEvent> WaitGameplayEventTask;

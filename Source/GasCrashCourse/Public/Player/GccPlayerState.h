@@ -13,7 +13,7 @@ class UAttributeSet;
 /**
  *
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API AGccPlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
@@ -24,7 +24,7 @@ public:
 
 	UAttributeSet* GetAttributeSet() const { return AttributeSet; }
 private:
-	UPROPERTY(VisibleAnywhere, Category = "GasCrash|Abilities")
+	UPROPERTY(VisibleAnywhere, Category = "Gas Crash|Abilities")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()

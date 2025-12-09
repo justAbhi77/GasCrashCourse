@@ -7,23 +7,27 @@
 #include "GccPrimary.generated.h"
 
 /**
- *
+ * Player's primary attack game ability
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API UGccPrimary : public UGccGameplayAbility
 {
 	GENERATED_BODY()
+
 public:
+
 	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "GasCrash|Abilities")
 	// ReSharper disable once CppUEBlueprintCallableFunctionUnused
 	void SendHitReactEventToActors(const TArray<AActor*>& ActorsHit) const;
+
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GasCrash|Abilities")
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gas Crash|Abilities")
 	float HitBoxRadius = 100.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GasCrash|Abilities")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gas Crash|Abilities")
 	float HitBoxForwardOffset = 200.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GasCrash|Abilities")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gas Crash|Abilities")
 	float HitBoxElevationOffset = 20.0f;
 };

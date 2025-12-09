@@ -21,15 +21,15 @@ FString UDebugUtil::BuildTimestamp()
 }
 
 // Category-Based Debug Color
-FColor UDebugUtil::GetColorForCategory(const EDebugCategories Category)
+FColor UDebugUtil::GetColorForCategory(const EDebugCategories Category, const FLinearColor Default)
 {
 	switch(Category)
 	{
-		case EDebugCategories::Edc_Gcc : return FColor::Cyan;
+		case EDebugCategories::Edc_Gcc : return FColor::Yellow;
 
 		case EDebugCategories::Edc_Others:
 		default:
-			return FColor::White;
+			return Default.ToFColor(false);
 	}
 }
 
@@ -52,7 +52,7 @@ bool UDebugUtil::IsCategoryEnabled(const EDebugCategories Category)
 }
 
 // Unified Debug Message Printer
-void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Category, const FLinearColor LinearColor, const float Time, const char* FunctionName, const int Line)
+void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Category, const FLinearColor LinearColor, const float Time, const char* FunctionName, const int Line, const bool bWarning)
 {
 #if !UE_BUILD_SHIPPING
 
@@ -68,7 +68,7 @@ void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Ca
 	const FString FinalMsg = FString::Printf(TEXT("[%s][%s][%s:%d] %s"), *Timestamp, *EnumVal, *FunctionStr, Line, *Msg);
 
 	// Log to Output Log
-	if(CVarDebugPrintToLog.GetValueOnAnyThread() != 0)
+	if(CVarDebugPrintToLog.GetValueOnAnyThread() != 0 || bWarning)
 	{
 		switch(Category)
 		{
@@ -84,11 +84,8 @@ void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Ca
 	}
 
 	// Print on screen
-	if(CVarDebugPrintToScreen.GetValueOnAnyThread() != 0 && GEngine)
-	{
-		const FColor ScreenColor = LinearColor.ToFColor(false);
-		GEngine->AddOnScreenDebugMessage(-1, Time, ScreenColor, FinalMsg);
-	}
+	if((CVarDebugPrintToScreen.GetValueOnAnyThread() != 0 || bWarning) && GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, Time, GetColorForCategory(Category, LinearColor), FinalMsg);
 
 #endif
 }

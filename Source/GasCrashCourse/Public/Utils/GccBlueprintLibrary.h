@@ -6,12 +6,12 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GccBlueprintLibrary.generated.h"
 
-
 struct FGameplayTag;
 struct FGameplayEventData;
 class UGameplayEffect;
 
-UENUM(BlueprintType)
+// The cardinal directions, used for playing the hit reaction animation based on the direction of hit
+UENUM(BlueprintType, Category = "Gas Crash")
 enum class EHitDirection : uint8
 {
 	Left,
@@ -20,7 +20,8 @@ enum class EHitDirection : uint8
 	Back
 };
 
-USTRUCT(BlueprintType)
+// Structure to hold the closest actor found.
+USTRUCT(BlueprintType, Category = "Gas Crash")
 struct FClosestActorWithTagResult
 {
 	GENERATED_BODY()
@@ -33,12 +34,14 @@ struct FClosestActorWithTagResult
 };
 
 /**
- *
+ * Utility Blueprint library for handling hit direction, damage events, knockback logic,
+ * and actor search functionality used across the GAS Crash Course project.
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API UGccBlueprintLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
+
 public:
 	UFUNCTION(BlueprintPure, Category = "GasCrash")
 	static EHitDirection GetHitDirection(const FVector& TargetForward, const FVector& ToInstigator);
@@ -52,7 +55,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GasCrash")
 	static void SendDamageEventToPlayer(AActor* Target, const TSubclassOf<UGameplayEffect>& DamageEffect, UPARAM(ref) FGameplayEventData& Payload, const FGameplayTag& DataTag, float Damage, const FGameplayTag& EventTagOverride, UObject* OptionalParticleSystem = nullptr);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "GasCrash")
 	static void SendDamageEventToPlayers(TArray<AActor*> Targets, const TSubclassOf<UGameplayEffect>& DamageEffect, UPARAM(ref) FGameplayEventData& Payload, const FGameplayTag& DataTag, float Damage, const FGameplayTag& EventTagOverride, UObject* OptionalParticleSystem = nullptr);
 
 	UFUNCTION(BlueprintCallable, Category = "GasCrash|Abilities")

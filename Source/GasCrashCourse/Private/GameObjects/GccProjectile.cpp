@@ -1,13 +1,12 @@
 // Copyright. All Rights Reserved.
 
-
 #include "GameObjects/GccProjectile.h"
 #include "AbilitySystemComponent.h"
 #include "Characters/GccPlayerCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameplayTags/GccTags.h"
 #include "Utils/GccBlueprintLibrary.h"
-
+#include "Utils/DebugUtil.h"
 
 AGccProjectile::AGccProjectile()
 {
@@ -25,10 +24,32 @@ void AGccProjectile::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 
+	if(!IsValid(OtherActor))
+	{
+		PRINT_DEBUG_WARNING("Overlap but OtherActor is invalid");
+		return;
+	}
+
 	AGccPlayerCharacter* PlayerCharacter = Cast<AGccPlayerCharacter>(OtherActor);
-	if(!IsValid(PlayerCharacter)) return;
-	if(!PlayerCharacter->IsAlive()) return;
-	if(const UAbilitySystemComponent* AbilitySystemComponent = PlayerCharacter->GetAbilitySystemComponent(); !IsValid(AbilitySystemComponent) || !HasAuthority()) return;
+	if(!IsValid(PlayerCharacter))
+	{
+		PRINT_DEBUG("Overlap ignored: not a player");
+		return;
+	}
+
+	if(!PlayerCharacter->IsAlive())
+	{
+		PRINT_DEBUG("Overlap ignored: player not alive");
+		return;
+	}
+
+	// ReSharper disable once CppTooWideScopeInitStatement
+	const UAbilitySystemComponent* AbilitySystemComponent = PlayerCharacter->GetAbilitySystemComponent();
+	if(!IsValid(AbilitySystemComponent) || !HasAuthority())
+	{
+		PRINT_DEBUG_WARNING("Cannot apply damage: ASC invalid or not authority");
+		return;
+	}
 
 	FGameplayEventData Payload;
 	Payload.Instigator = GetOwner();
@@ -37,11 +58,6 @@ void AGccProjectile::NotifyActorBeginOverlap(AActor* OtherActor)
 	UGccBlueprintLibrary::SendDamageEventToPlayer(PlayerCharacter, DamageEffect, Payload, GccTags::SetByCaller::Projectile, Damage, GccTags::None);
 
 	SpawnImpactEffects();
+	PRINT_DEBUG("Impact effects triggered.Projectile destroyed after hit");
 	Destroy();
 }
-
-void AGccProjectile::BeginPlay()
-{
-	Super::BeginPlay();
-}
-

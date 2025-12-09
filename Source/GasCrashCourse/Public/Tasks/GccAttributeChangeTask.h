@@ -13,9 +13,9 @@ class UAbilitySystemComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChanged, FGameplayAttribute, Attribute, float, NewValue, float, OldValue);
 
 /**
- *
+ * Blueprint node to listen for changes to a specific attribute on an Ability System Component.
  */
-UCLASS(BlueprintType, meta = (ExposedAsyncProxy = AsyncTask))
+UCLASS(BlueprintType, Category = "Gas Crash", meta = (ExposedAsyncProxy = AsyncTask))
 class GASCRASHCOURSE_API UGccAttributeChangeTask : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()

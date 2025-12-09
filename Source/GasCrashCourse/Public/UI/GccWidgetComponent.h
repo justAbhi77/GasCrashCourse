@@ -7,30 +7,29 @@
 #include "AttributeSet.h"
 #include "GccWidgetComponent.generated.h"
 
-
 class UAbilitySystemComponent;
 class UGccAttributeSet;
 class UGccAbilitySystemComponent;
 class AGccBaseCharacter;
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+/*
+* This Widget Component binds gameplay attribute values to UI widgets
+* and updates them automatically when attributes change.
+*/
+UCLASS(ClassGroup=(Custom), Category = "Gas Crash", meta=(BlueprintSpawnableComponent))
 class GASCRASHCOURSE_API UGccWidgetComponent : public UWidgetComponent
 {
 	GENERATED_BODY()
-
-public:
-	UGccWidgetComponent();
-
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
 protected:
+
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere)
-	TMap<FGameplayAttribute, FGameplayAttribute> AttributeMap;
 private:
+
 	TWeakObjectPtr<AGccBaseCharacter> CrashCharacter;
+
 	TWeakObjectPtr<UGccAbilitySystemComponent> AbilitySystemComponent;
+
 	TWeakObjectPtr<UGccAttributeSet> AttributeSet;
 
 	void InitAbilitySystemData();
@@ -45,5 +44,5 @@ private:
 	UFUNCTION()
 	void BindToAttributeChanges();
 
-	void BindWidgetToAttributeChanges(UWidget* WidgetObject, const TTuple<FGameplayAttribute, FGameplayAttribute>& Pair) const;
+	void BindWidgetToAttributeChanges(UWidget* WidgetObject) const;
 };

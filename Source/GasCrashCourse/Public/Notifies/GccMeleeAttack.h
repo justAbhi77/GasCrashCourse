@@ -7,27 +7,31 @@
 #include "GccMeleeAttack.generated.h"
 
 /**
- *
+ * Melee trace notify state for enemy attacks
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API UGccMeleeAttack : public UAnimNotifyState
 {
 	GENERATED_BODY()
+
 public:
-	virtual void NotifyBegin(USkeletalMeshComponent * MeshComp, UAnimSequenceBase * Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference) override;
+
+	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase * Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference) override;
 
 	virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference) override;
+
 private:
-	UPROPERTY(EditAnywhere, Category = "GasCrash|Debugs")
+
+	UPROPERTY(EditAnywhere, Category = "Gas Crash|Debug")
 	bool bDrawDebugs = true;
 
-	UPROPERTY(EditAnywhere, Category = "GasCrash|Socket")
+	UPROPERTY(EditAnywhere, Category = "Gas Crash|Socket")
 	FName SocketName{"Socket_MeleeWeapon"};
 
-	UPROPERTY(EditAnywhere, Category = "GasCrash|Socket")
+	UPROPERTY(EditAnywhere, Category = "Gas Crash|Socket")
 	float SocketExtensionOffset{40.f};
 
-	UPROPERTY(EditAnywhere, Category = "GasCrash|Socket")
+	UPROPERTY(EditAnywhere, Category = "Gas Crash|Socket")
 	float SphereTraceRadius{60.f};
 
 	TArray<FHitResult> PerformSphereTrace(USkeletalMeshComponent* MeshComp) const;

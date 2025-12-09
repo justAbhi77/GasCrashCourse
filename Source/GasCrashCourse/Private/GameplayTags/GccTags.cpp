@@ -1,6 +1,5 @@
 // Copyright. All Rights Reserved.
 
-
 #include "GameplayTags/GccTags.h"
 
 namespace GccTags

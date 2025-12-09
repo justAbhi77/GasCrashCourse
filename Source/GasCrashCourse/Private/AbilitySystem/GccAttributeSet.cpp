@@ -1,11 +1,11 @@
 // Copyright. All Rights Reserved.
 
-
 #include "AbilitySystem/GccAttributeSet.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameplayTags/GccTags.h"
+#include "Utils/DebugUtil.h"
 
 void UGccAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -23,17 +23,24 @@ void UGccAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbac
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	if(Data.EvaluatedData.Attribute == GetHealthAttribute() && GetHealth() <= 0.f)
+	const FGameplayAttribute& Attribute = Data.EvaluatedData.Attribute;
+
+	// Health reaching zero
+	if(Attribute == GetHealthAttribute() && GetHealth() <= 0.f)
 	{
+		PRINT_DEBUG("Health reached zero — broadcasting KillScored event");
+
 		FGameplayEventData Payload;
 		Payload.Instigator = Data.Target.GetAvatarActor();
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Data.EffectSpec.GetEffectContext().GetInstigator(), GccTags::Events::KillScored, Payload);
 	}
 
-	if(Data.EvaluatedData.Attribute == GetManaAttribute() && bAttributesInitialized)
+	// Clamp Mana
+	if(Attribute == GetManaAttribute() && bAttributesInitialized)
 		SetMana(FMath::Clamp(GetMana(), 0.f, GetMaxMana()));
 
-	if(Data.EvaluatedData.Attribute == GetHealthAttribute() && bAttributesInitialized)
+	// Clamp Health
+	if(Attribute == GetHealthAttribute() && bAttributesInitialized)
 		SetHealth(FMath::Clamp(GetHealth(), 0.f, GetMaxHealth()));
 }
 
@@ -48,5 +55,8 @@ void UGccAttributeSet::PostAttributeInitialized()
 	if(bAttributesInitialized) return;
 
 	bAttributesInitialized = true;
+
+	PRINT_DEBUG("broadcasting to listeners");
+
 	OnAttributesInitialized.Broadcast();
 }

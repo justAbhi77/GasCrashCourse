@@ -1,23 +1,20 @@
 // Copyright. All Rights Reserved.
 
-
-#include "GasCrashCourse/Public/Characters/GccBaseCharacter.h"
+#include "Characters/GccBaseCharacter.h"
 #include "AbilitySystemComponent.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "Net/UnrealNetwork.h"
 #include "AbilitySystem/GccAttributeSet.h"
-
+#include "Net/UnrealNetwork.h"
+#include "Utils/DebugUtil.h"
 
 AGccBaseCharacter::AGccBaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// Tick and refresh bone transforms whether rendered or not - for bone updates on a dedicated server
-	// To make Hitboxes from animation work correctly in game (generally for a server based animation)
+	// Make hitboxes work on server
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 }
 
-void AGccBaseCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+void AGccBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
@@ -26,26 +23,38 @@ void AGccBaseCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 
 UAbilitySystemComponent* AGccBaseCharacter::GetAbilitySystemComponent() const
 {
+	// Override in child classes
 	return nullptr;
 }
 
 void AGccBaseCharacter::GiveStartupAbilities()
 {
-	if(!IsValid(GetAbilitySystemComponent())) return;
+	if(!IsValid(GetAbilitySystemComponent()))
+	{
+		PRINT_DEBUG_WARNING("ASC invalid. Cannot give startup abilities");
+		return;
+	}
 
 	for(const auto& Ability : StartupAbilities)
 	{
 		FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(Ability);
 		GetAbilitySystemComponent()->GiveAbility(AbilitySpec);
 	}
+
+	PRINT_DEBUG("Startup abilities granted");
 }
 
 void AGccBaseCharacter::InitializeAttributes() const
 {
-	// checkf(IsValid(InitializeAttributesEffect), TEXT("InitializeAttributesEffect not set."));
 	if(!IsValid(InitializeAttributesEffect))
 	{
-		UKismetSystemLibrary::PrintString(GetWorld(), "Invalid Attribute Effects. InitializeAttributesEffect not set.", true, true, FLinearColor(1,0,0,1), 5.f);
+		PRINT_DEBUG_WARNING("InitializeAttributesEffect missing");
+		return;
+	}
+
+	if(!IsValid(GetAbilitySystemComponent()))
+	{
+		PRINT_DEBUG_WARNING("ASC missing during InitializeAttributes");
 		return;
 	}
 
@@ -53,12 +62,16 @@ void AGccBaseCharacter::InitializeAttributes() const
 	const FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(InitializeAttributesEffect, 1.f, ContextHandle);
 	GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
+	PRINT_DEBUG("Initial attributes applied");
+
 	if(UGccAttributeSet* AttributeSet = Cast<UGccAttributeSet>(GetAttributeSet()))
 		AttributeSet->PostAttributeInitialized();
 }
 
 void AGccBaseCharacter::OnHealthChanged(const FOnAttributeChangeData& AttributeChangeData)
 {
+	PRINT_DEBUG("Health changed %f", AttributeChangeData.NewValue);
+
 	if(AttributeChangeData.NewValue <= 0.f)
 		HandleDeath();
 }
@@ -66,28 +79,32 @@ void AGccBaseCharacter::OnHealthChanged(const FOnAttributeChangeData& AttributeC
 void AGccBaseCharacter::HandleDeath()
 {
 	bAlive = false;
-
-	if(IsValid(GEngine))
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("%s has died!"), *GetName()));
+	PRINT_DEBUG("%s has died", *GetName());
 }
 
 void AGccBaseCharacter::HandleRespawn()
 {
 	bAlive = true;
+	PRINT_DEBUG("Character respawned");
 }
 
 void AGccBaseCharacter::ResetAttributes() const
 {
-	// checkf(IsValid(ResetAttributesEffect), TEXT("ResetAttributesEffect not set."));
 	if(!IsValid(ResetAttributesEffect))
 	{
-		UKismetSystemLibrary::PrintString(GetWorld(), "Invalid Reset Attributes Effect. ResetAttributesEffect not set.", true, true, FLinearColor(1,0,0,1), 5.f);
+		PRINT_DEBUG_WARNING("ResetAttributesEffect missing");
 		return;
 	}
 
-	if(!IsValid(GetAbilitySystemComponent())) return;
+	if(!IsValid(GetAbilitySystemComponent()))
+	{
+		PRINT_DEBUG_WARNING("ASC missing during ResetAttributes");
+		return;
+	}
 
 	const FGameplayEffectContextHandle ContextHandle = GetAbilitySystemComponent()->MakeEffectContext();
 	const FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(ResetAttributesEffect, 1.f, ContextHandle);
 	GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+	PRINT_DEBUG("Attributes reset");
 }

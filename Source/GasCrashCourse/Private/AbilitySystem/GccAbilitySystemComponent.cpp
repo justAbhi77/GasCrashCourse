@@ -1,32 +1,14 @@
 // Copyright. All Rights Reserved.
 
-
 #include "AbilitySystem/GccAbilitySystemComponent.h"
 #include "GameplayTags/GccTags.h"
-
-
-UGccAbilitySystemComponent::UGccAbilitySystemComponent()
-{
-	PrimaryComponentTick.bCanEverTick = true;
-
-}
-
-void UGccAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-}
-
-void UGccAbilitySystemComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
+#include "Utils/DebugUtil.h"
 
 void UGccAbilitySystemComponent::OnGiveAbility(FGameplayAbilitySpec& AbilitySpec)
 {
 	Super::OnGiveAbility(AbilitySpec);
 
+	PRINT_DEBUG("Ability %s given to %s at level: %d", *AbilitySpec.Ability->GetName(), *GetOwnerActor()->GetName(), AbilitySpec.Level);
 	HandleAutoActivatedAbility(AbilitySpec);
 }
 
@@ -49,9 +31,13 @@ void UGccAbilitySystemComponent::SetAbilityLevel(const TSubclassOf<UGameplayAbil
 
 	if(FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromClass(AbilityClass))
 	{
+		PRINT_DEBUG("%s -> Level %d", *AbilityClass->GetName(), Level);
+
 		AbilitySpec->Level = Level;
 		MarkAbilitySpecDirty(*AbilitySpec);
 	}
+	else
+		PRINT_DEBUG_WARNING("failed: Ability %s not found", *AbilityClass->GetName());
 }
 
 void UGccAbilitySystemComponent::AddToAbilityLevel(const TSubclassOf<UGameplayAbility> AbilityClass, const int32 LevelsToAdd)
@@ -60,21 +46,30 @@ void UGccAbilitySystemComponent::AddToAbilityLevel(const TSubclassOf<UGameplayAb
 
 	if(FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromClass(AbilityClass))
 	{
+		PRINT_DEBUG("%s -> +%d Levels", *AbilityClass->GetName(), LevelsToAdd);
+
 		AbilitySpec->Level += LevelsToAdd;
 		MarkAbilitySpecDirty(*AbilitySpec);
 	}
+	else
+		PRINT_DEBUG_WARNING("failed: Ability %s not found", *AbilityClass->GetName());
 }
 
 void UGccAbilitySystemComponent::HandleAutoActivatedAbility(const FGameplayAbilitySpec& AbilitySpec)
 {
-	if(!IsValid(AbilitySpec.Ability)) return;
+	if(!IsValid(AbilitySpec.Ability))
+	{
+		PRINT_DEBUG_WARNING("Invalid AbilitySpec.Ability");
+		return;
+	}
 
 	for(const FGameplayTag& Tag : AbilitySpec.Ability->GetAssetTags())
 		if(Tag.MatchesTagExact(GccTags::GccAbilities::ActivateOnGiven))
 		{
-			TryActivateAbility(AbilitySpec.Handle);
+			PRINT_DEBUG("Activating %s", *AbilitySpec.Ability->GetName());
+
 			// we can not use GiveAbilityAndActivateOnce here because it would remove the ability from the ability system component
+			TryActivateAbility(AbilitySpec.Handle);
 			return;
 		}
 }
-

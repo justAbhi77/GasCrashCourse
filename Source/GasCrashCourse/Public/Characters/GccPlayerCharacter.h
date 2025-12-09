@@ -10,9 +10,9 @@ class USpringArmComponent;
 class UCameraComponent;
 
 /**
- *
+ * Player character class for the Gas Crash course.
  */
-UCLASS()
+UCLASS(Category = "Gas Crash")
 class GASCRASHCOURSE_API AGccPlayerCharacter : public AGccBaseCharacter
 {
 	GENERATED_BODY()
@@ -27,10 +27,12 @@ public:
 	virtual void OnRep_PlayerState() override;
 
 	virtual UAttributeSet* GetAttributeSet() const override;
+
 private:
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
+
+	UPROPERTY(VisibleAnywhere, Category = "Gas Crash|Camera")
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, Category = "Gas Crash|Camera")
 	TObjectPtr<UCameraComponent> FollowCamera;
 };

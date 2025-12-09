@@ -1,19 +1,12 @@
 // Copyright. All Rights Reserved.
 
-
 #include "UI/GccWidgetComponent.h"
 #include "AbilitySystem/GccAbilitySystemComponent.h"
 #include "AbilitySystem/GccAttributeSet.h"
 #include "Characters/GccBaseCharacter.h"
 #include "Blueprint/WidgetTree.h"
 #include "UI/GccAttributeWidget.h"
-
-
-UGccWidgetComponent::UGccWidgetComponent()
-{
-	PrimaryComponentTick.bCanEverTick = true;
-
-}
+#include "Utils/DebugUtil.h"
 
 void UGccWidgetComponent::BeginPlay()
 {
@@ -23,24 +16,30 @@ void UGccWidgetComponent::BeginPlay()
 
 	if(!IsAscInitialized())
 	{
-		CrashCharacter->OnAscInitialized.AddDynamic(this, &ThisClass::OnAscInitialized);
+		if(CrashCharacter.IsValid())
+			CrashCharacter->OnAscInitialized.AddDynamic(this, &ThisClass::OnAscInitialized);
+		else
+			PRINT_DEBUG_WARNING("Invalid CrashCharacter ");
 		return;
 	}
 
 	InitializeAttributeDelegate();
 }
 
-void UGccWidgetComponent::TickComponent(const float DeltaTime, const ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-}
-
 void UGccWidgetComponent::InitAbilitySystemData()
 {
 	CrashCharacter = Cast<AGccBaseCharacter>(GetOwner());
+
+	if(!CrashCharacter.IsValid())
+	{
+		PRINT_DEBUG_WARNING("CrashCharacter invalid in InitAbilitySystemData");
+		return;
+	}
+
 	AttributeSet = Cast<UGccAttributeSet>(CrashCharacter->GetAttributeSet());
 	AbilitySystemComponent = Cast<UGccAbilitySystemComponent>(CrashCharacter->GetAbilitySystemComponent());
+
+	PRINT_DEBUG("InitAbilitySystemData: ASC=%d AttrSet=%d", AbilitySystemComponent.IsValid(), AttributeSet.IsValid());
 }
 
 bool UGccWidgetComponent::IsAscInitialized() const
@@ -50,55 +49,96 @@ bool UGccWidgetComponent::IsAscInitialized() const
 
 void UGccWidgetComponent::InitializeAttributeDelegate()
 {
+	if(!AttributeSet.IsValid())
+	{
+		PRINT_DEBUG_WARNING("AttributeSet invalid in InitializeAttributeDelegate");
+		return;
+	}
+
 	if(!AttributeSet->bAttributesInitialized)
+	{
+		PRINT_DEBUG("Attributes not initialized. Binding to OnAttributesInitialized...");
 		AttributeSet->OnAttributesInitialized.AddDynamic(this, &ThisClass::BindToAttributeChanges);
+	}
 	else
+	{
+		PRINT_DEBUG("Attributes already initialized. Binding now...");
 		BindToAttributeChanges();
+	}
 }
 
 void UGccWidgetComponent::OnAscInitialized(UAbilitySystemComponent* Asc, UAttributeSet* As)
 {
+	PRINT_DEBUG("ASC initialized callback received");
+
 	AbilitySystemComponent = Cast<UGccAbilitySystemComponent>(Asc);
 	AttributeSet = Cast<UGccAttributeSet>(As);
 
-	// Check if the Attribute Set has been initialized with the first GE
-	// If not, bind to some delegate that will be broadcast when it is initialized.
+	if(!IsAscInitialized())
+	{
+		PRINT_DEBUG_WARNING("ASC or AttributeSet invalid after OnAscInitialized");
+		return;
+	}
 
-	if(!IsAscInitialized()) return;
 	InitializeAttributeDelegate();
 }
 
+// ReSharper disable once CppMemberFunctionMayBeConst
 void UGccWidgetComponent::BindToAttributeChanges()
 {
-	// Listen for changes to Gameplay Attributes and update our widgets accordingly.
-	for(const auto& Pair : AttributeMap)
+	if(!AbilitySystemComponent.IsValid() || !AttributeSet.IsValid())
 	{
-		BindWidgetToAttributeChanges(GetUserWidgetObject(), Pair); // for checking the owned widget object.
-
-		GetUserWidgetObject()->WidgetTree->ForEachWidget([this, &Pair](UWidget* ChildWidget)
-		{
-			BindWidgetToAttributeChanges(ChildWidget, Pair);
-		});
+		PRINT_DEBUG_WARNING("Cannot bind attributes: ASC or AttributeSet invalid");
+		return;
 	}
-}
 
-void UGccWidgetComponent::BindWidgetToAttributeChanges(UWidget* WidgetObject, const TTuple<FGameplayAttribute, FGameplayAttribute>& Pair) const
-{
-	UGccAttributeWidget* AttributeWidget = Cast<UGccAttributeWidget>(WidgetObject);
-	if(!IsValid(AttributeWidget)) return; // We only care about CC Attribute Widgets
-	if(!AttributeWidget->MatchesAttributes(Pair)) return; // Only subscribe for matching Attributes
-
-	AttributeWidget->AvatarActor = CrashCharacter;
-
-	AttributeWidget->OnAttributeChange(Pair, AttributeSet.Get(), 0.f); // for initial values.
-
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Pair.Key).AddLambda([this, AttributeWidget, &Pair](const FOnAttributeChangeData& AttributeChangeData)
+	// ReSharper disable once CppTooWideScopeInitStatement
+	UUserWidget* RootWidget = GetUserWidgetObject();
+	if(!IsValid(RootWidget))
 	{
-		AttributeWidget->OnAttributeChange(Pair, AttributeSet.Get(), AttributeChangeData.OldValue); // For attribute value changes during the game.
+		PRINT_DEBUG_WARNING("Root widget invalid");
+		return;
+	}
+
+	PRINT_DEBUG("Binding widgets to attribute changes...");
+
+	RootWidget->WidgetTree->ForEachWidget([this](UWidget* ChildWidget)
+	{
+		BindWidgetToAttributeChanges(ChildWidget);
 	});
 
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Pair.Value).AddLambda([this, AttributeWidget, &Pair](const FOnAttributeChangeData& AttributeChangeData)
-	{
-		AttributeWidget->OnAttributeChange(Pair, AttributeSet.Get(), AttributeChangeData.OldValue); // For attribute max value changes during the game.
+	BindWidgetToAttributeChanges(RootWidget);
+}
+
+void UGccWidgetComponent::BindWidgetToAttributeChanges(UWidget* WidgetObject) const
+{
+	UGccAttributeWidget* GccWidget = Cast<UGccAttributeWidget>(WidgetObject);
+	if(!GccWidget)
+		return;
+
+	GccWidget->AvatarActor = CrashCharacter.Get();
+
+	// Initial update
+	GccWidget->OnAttributeChange(AttributeSet.Get(), 0.f);
+
+	TWeakObjectPtr WeakWidget = GccWidget;
+	UGccAttributeSet* AttributeSetPtr = AttributeSet.Get();
+
+	// --- Attribute change binding ---
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(GccWidget->Attribute).AddLambda([this, WeakWidget, AttributeSetPtr](const FOnAttributeChangeData& Data){
+			if(UGccAttributeWidget* Widget = WeakWidget.Get())
+			{
+				PRINT_DEBUG("Attribute changed. Was %f New value is %f", Data.OldValue, Data.NewValue);
+				Widget->OnAttributeChange(AttributeSetPtr, Data.OldValue);
+			}
+	});
+
+	// --- Max attribute change binding ---
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(GccWidget->MaxAttribute).AddLambda([this, WeakWidget, AttributeSetPtr](const FOnAttributeChangeData& Data){
+			if(UGccAttributeWidget* Widget = WeakWidget.Get())
+			{
+				PRINT_DEBUG("Max Attribute changed. Was %f New value is %f", Data.OldValue, Data.NewValue);
+				Widget->OnAttributeChange(AttributeSetPtr, Data.OldValue);
+			}
 	});
 }

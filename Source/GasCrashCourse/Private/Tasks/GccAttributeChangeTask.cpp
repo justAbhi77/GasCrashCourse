@@ -30,6 +30,7 @@ void UGccAttributeChangeTask::EndTask()
 	MarkAsGarbage();
 }
 
+// ReSharper disable once CppMemberFunctionMayBeConst
 void UGccAttributeChangeTask::AttributeChanged(const FOnAttributeChangeData& Data)
 {
 	OnAttributeChanged.Broadcast(Data.Attribute, Data.NewValue, Data.OldValue);

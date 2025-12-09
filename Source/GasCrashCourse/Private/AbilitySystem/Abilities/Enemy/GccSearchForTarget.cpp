@@ -1,6 +1,5 @@
 // Copyright. All Rights Reserved.
 
-
 #include "AbilitySystem/Abilities/Enemy/GccSearchForTarget.h"
 #include "AbilitySystemComponent.h"
 #include "AIController.h"
@@ -9,9 +8,10 @@
 #include "AbilitySystem/AbilityTasks/GccWaitGameplayEvent.h"
 #include "Characters/GccEnemyCharacter.h"
 #include "GameplayTags/GccTags.h"
+#include "GasCrashCourse/GasCrashCourse.h"
 #include "Tasks/AITask_MoveTo.h"
 #include "Utils/GccBlueprintLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Utils/DebugUtil.h"
 
 UGccSearchForTarget::UGccSearchForTarget()
 {
@@ -24,17 +24,16 @@ void UGccSearchForTarget::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	OwningEnemy = Cast<AGccEnemyCharacter>(GetAvatarActorFromActorInfo());
-	// check(OwningEnemy.IsValid());
 	if(!OwningEnemy.IsValid())
 	{
-		UKismetSystemLibrary::PrintString(GetWorld(), "Invalid Owning Enemy. OwningEnemy not set.", true, true, FLinearColor(1,0,0,1), 5.f);
+		PRINT_DEBUG_WARNING("Invalid Owning Enemy. OwningEnemy not set.");
 		return;
 	}
+
 	OwningAIController = Cast<AAIController>(OwningEnemy->GetController());
-	// check(OwningAIController.IsValid());
 	if(!OwningAIController.IsValid())
 	{
-		UKismetSystemLibrary::PrintString(GetWorld(), "Invalid Owning AI Controller. OwningAIController not set.", true, true, FLinearColor(1,0,0,1), 5.f);
+		PRINT_DEBUG_WARNING("Invalid AIController");
 		return;
 	}
 
@@ -47,10 +46,14 @@ void UGccSearchForTarget::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 void UGccSearchForTarget::StartSearch()
 {
-	if(bDrawDebugs) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("UGccSearchForTarget::StartSearch")));
+	PRINT_DEBUG("");
+
 	if(!OwningEnemy.IsValid()) return;
 
 	const float SearchDelay = FMath::RandRange(OwningEnemy->MinAttackDelay, OwningEnemy->MaxAttackDelay);
+
+	PRINT_DEBUG("Starting search with delay: %f", SearchDelay);
+
 	SearchDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, SearchDelay);
 	SearchDelayTask->OnFinish.AddDynamic(this, &ThisClass::Search);
 	SearchDelayTask->Activate();
@@ -58,39 +61,45 @@ void UGccSearchForTarget::StartSearch()
 
 void UGccSearchForTarget::EndAttackEventReceived(FGameplayEventData Payload)
 {
-	if(OwningEnemy.IsValid() && !OwningEnemy->bIsBeingLaunched)
-		StartSearch();
+	PRINT_DEBUG("EndAttack Event Received");
+
+	if(OwningEnemy.IsValid() && !OwningEnemy->bIsBeingLaunched) StartSearch();
 }
 
 void UGccSearchForTarget::Search()
 {
-	const FVector SearchOrigin = GetAvatarActorFromActorInfo()->GetActorLocation();
-
 	if(!OwningEnemy.IsValid()) return;
-	const auto [ClosestActor, ClosestDistance] = UGccBlueprintLibrary::FindClosestActorWithTag(this, SearchOrigin, GasCrashTags::Player, OwningEnemy->SearchRange);
 
+	const FVector SearchOrigin = GetAvatarActorFromActorInfo()->GetActorLocation();
+	PRINT_DEBUG("Searching for Player target");
+
+	const auto [ClosestActor, ClosestDistance] = UGccBlueprintLibrary::FindClosestActorWithTag(this, SearchOrigin, GasCrashTags::Player, OwningEnemy->SearchRange);
 	TargetBaseCharacter = Cast<AGccBaseCharacter>(ClosestActor);
 
 	if(!TargetBaseCharacter.IsValid())
 	{
+		PRINT_DEBUG("no valid target found");
 		StartSearch();
 		return;
 	}
 
-	if(TargetBaseCharacter->IsAlive())
-		MoveToTargetAndAttack();
-	else
-		StartSearch();
+	PRINT_DEBUG("Target found: %s", *TargetBaseCharacter->GetName());
+
+	if(TargetBaseCharacter->IsAlive()) MoveToTargetAndAttack();
+	else StartSearch();
 }
 
 void UGccSearchForTarget::MoveToTargetAndAttack()
 {
 	if(!OwningEnemy.IsValid() || !OwningAIController.IsValid() || !TargetBaseCharacter.IsValid()) return;
+
 	if(!OwningEnemy->IsAlive())
 	{
 		StartSearch();
 		return;
 	}
+
+	PRINT_DEBUG("Moving to target");
 
 	MoveToLocationOrActorTask = UAITask_MoveTo::AIMoveTo(OwningAIController.Get(), FVector(), TargetBaseCharacter.Get(), OwningEnemy->AcceptanceRadius);
 	MoveToLocationOrActorTask->OnMoveTaskFinished.AddUObject(this, &ThisClass::AttackTarget);
@@ -101,9 +110,13 @@ void UGccSearchForTarget::AttackTarget(TEnumAsByte<EPathFollowingResult::Type> R
 {
 	if(Result != EPathFollowingResult::Success)
 	{
+		PRINT_DEBUG("Move failed, restarting search");
 		StartSearch();
 		return;
 	}
+
+	PRINT_DEBUG("Reached target, preparing attack");
+
 	OwningEnemy->RotateToTarget(TargetBaseCharacter.Get());
 
 	AttackDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, OwningEnemy->GetTimelineLength());
@@ -114,17 +127,23 @@ void UGccSearchForTarget::AttackTarget(TEnumAsByte<EPathFollowingResult::Type> R
 void UGccSearchForTarget::Attack()
 {
 	if(!OwningEnemy.IsValid()) return;
-
 	if(!OwningEnemy->IsAlive())
 	{
 		StartSearch();
 		return;
 	}
 
+	PRINT_DEBUG("Attempting attack");
+
+	// ReSharper disable once CppTooWideScopeInitStatement
 	const FGameplayTag AttackTag = GccTags::GccAbilities::Enemy::Attack;
+
 	if(!GetAbilitySystemComponentFromActorInfo()->TryActivateAbilitiesByTag(AttackTag.GetSingleTagContainer()))
 	{
+		PRINT_DEBUG("Attack could not activate, restarting search");
 		StartSearch();
 		return;
 	}
+
+	PRINT_DEBUG("Attack activated");
 }

@@ -3,7 +3,7 @@
 
 #include "AbilitySystem/AbilityTasks/GccWaitGameplayEvent.h"
 
-UGccWaitGameplayEvent* UGccWaitGameplayEvent::WaitGameplayEventToActorProxy(AActor* TargetActor, FGameplayTag EventTag, bool OnlyTriggerOnce, bool OnlyMatchExact)
+UGccWaitGameplayEvent* UGccWaitGameplayEvent::WaitGameplayEventToActorProxy(AActor* TargetActor, const FGameplayTag EventTag, const bool OnlyTriggerOnce, const bool OnlyMatchExact)
 {
 	UGccWaitGameplayEvent* MyObj = NewObject<UGccWaitGameplayEvent>();
 	MyObj->SetAbilityActor(TargetActor);
