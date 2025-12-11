@@ -67,8 +67,6 @@ void AGccPlayerController::Move(const FInputActionValue& Value)
 
 	GetPawn()->AddMovementInput(ForwardDirection, MovementVector.Y);
 	GetPawn()->AddMovementInput(RightDirection, MovementVector.X);
-
-	PRINT_DEBUG("Move input: %s", *MovementVector.ToString());
 }
 
 void AGccPlayerController::Look(const FInputActionValue& Value)
@@ -81,8 +79,6 @@ void AGccPlayerController::Look(const FInputActionValue& Value)
 
 	AddYawInput(LookAxisVector.X);
 	AddPitchInput(LookAxisVector.Y);
-
-	PRINT_DEBUG("Look input: %s", *LookAxisVector.ToString());
 }
 
 void AGccPlayerController::Primary()

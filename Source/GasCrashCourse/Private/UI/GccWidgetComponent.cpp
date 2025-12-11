@@ -128,7 +128,7 @@ void UGccWidgetComponent::BindWidgetToAttributeChanges(UWidget* WidgetObject) co
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(GccWidget->Attribute).AddLambda([this, WeakWidget, AttributeSetPtr](const FOnAttributeChangeData& Data){
 			if(UGccAttributeWidget* Widget = WeakWidget.Get())
 			{
-				PRINT_DEBUG("Attribute changed. Was %f New value is %f", Data.OldValue, Data.NewValue);
+				PRINT_DEBUG("Attribute changed. %s Was %f New value is %f", *Data.Attribute.AttributeName, Data.OldValue, Data.NewValue);
 				Widget->OnAttributeChange(AttributeSetPtr, Data.OldValue);
 			}
 	});
@@ -137,7 +137,7 @@ void UGccWidgetComponent::BindWidgetToAttributeChanges(UWidget* WidgetObject) co
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(GccWidget->MaxAttribute).AddLambda([this, WeakWidget, AttributeSetPtr](const FOnAttributeChangeData& Data){
 			if(UGccAttributeWidget* Widget = WeakWidget.Get())
 			{
-				PRINT_DEBUG("Max Attribute changed. Was %f New value is %f", Data.OldValue, Data.NewValue);
+				PRINT_DEBUG("Max Attribute changed. %s Was %f New value is %f", *Data.Attribute.AttributeName, Data.OldValue, Data.NewValue);
 				Widget->OnAttributeChange(AttributeSetPtr, Data.OldValue);
 			}
 	});

@@ -7,10 +7,10 @@ DEFINE_LOG_CATEGORY(LogGcc);
 DEFINE_LOG_CATEGORY(LogOthers);
 
 // Console variables acting as runtime debug toggles
-static TAutoConsoleVariable CVarDebugGcc(TEXT("Gcc.Debug"), 1, TEXT("Master Debug Toggle for Gas Crash Course"));
-static TAutoConsoleVariable CVarDebugPrintToScreen(TEXT("Gcc.Debug.PrintToScreen"), 1, TEXT("Enable/Disable Print To Screen"));
-static TAutoConsoleVariable CVarDebugPrintToLog(TEXT("Gcc.Debug.PrintToLog"), 1, TEXT("Enable/Disable Print To Log"));
-static TAutoConsoleVariable CVarDebugOthers(TEXT("Gcc.Debug.Others"), 1, TEXT("Enable other debug prints"));
+static TAutoConsoleVariable CVarDebugGcc(TEXT("Gcc.Debug"), true, TEXT("Master Debug Toggle for Gas Crash Course"));
+static TAutoConsoleVariable CVarDebugPrintToScreen(TEXT("Gcc.Debug.PrintToScreen"), true, TEXT("Enable/Disable Print To Screen"));
+static TAutoConsoleVariable CVarDebugPrintToLog(TEXT("Gcc.Debug.PrintToLog"), true, TEXT("Enable/Disable Print To Log"));
+static TAutoConsoleVariable CVarDebugOthers(TEXT("Gcc.Debug.Others"), true, TEXT("Enable other debug prints"));
 
 
 // Timestamp (Real Clock Time)
@@ -37,14 +37,14 @@ FColor UDebugUtil::GetColorForCategory(const EDebugCategories Category, const FL
 bool UDebugUtil::IsCategoryEnabled(const EDebugCategories Category)
 {
 	// Master toggle
-	if(CVarDebugGcc.GetValueOnAnyThread() == 0)
+	if(!CVarDebugGcc->GetBool())
 		return false;
 
 	switch(Category)
 	{
 		case EDebugCategories::Edc_Gcc : return true;
 
-		case EDebugCategories::Edc_Others : return CVarDebugOthers.GetValueOnAnyThread() != 0;
+		case EDebugCategories::Edc_Others : return CVarDebugOthers->GetBool();
 
 		default:
 			return false;
@@ -68,7 +68,7 @@ void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Ca
 	const FString FinalMsg = FString::Printf(TEXT("[%s][%s][%s:%d] %s"), *Timestamp, *EnumVal, *FunctionStr, Line, *Msg);
 
 	// Log to Output Log
-	if(CVarDebugPrintToLog.GetValueOnAnyThread() != 0 || bWarning)
+	if(CVarDebugPrintToLog->GetBool() || bWarning)
 	{
 		switch(Category)
 		{
@@ -84,7 +84,7 @@ void UDebugUtil::PrintDebugMessage(const FString& Msg, const EDebugCategories Ca
 	}
 
 	// Print on screen
-	if((CVarDebugPrintToScreen.GetValueOnAnyThread() != 0 || bWarning) && GEngine)
+	if((CVarDebugPrintToScreen->GetBool() || bWarning) && GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, Time, GetColorForCategory(Category, LinearColor), FinalMsg);
 
 #endif

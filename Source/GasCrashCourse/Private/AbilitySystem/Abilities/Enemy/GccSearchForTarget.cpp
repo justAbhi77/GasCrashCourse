@@ -52,8 +52,6 @@ void UGccSearchForTarget::StartSearch()
 
 	const float SearchDelay = FMath::RandRange(OwningEnemy->MinAttackDelay, OwningEnemy->MaxAttackDelay);
 
-	PRINT_DEBUG("Starting search with delay: %f", SearchDelay);
-
 	SearchDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, SearchDelay);
 	SearchDelayTask->OnFinish.AddDynamic(this, &ThisClass::Search);
 	SearchDelayTask->Activate();
@@ -71,14 +69,12 @@ void UGccSearchForTarget::Search()
 	if(!OwningEnemy.IsValid()) return;
 
 	const FVector SearchOrigin = GetAvatarActorFromActorInfo()->GetActorLocation();
-	PRINT_DEBUG("Searching for Player target");
 
 	const auto [ClosestActor, ClosestDistance] = UGccBlueprintLibrary::FindClosestActorWithTag(this, SearchOrigin, GasCrashTags::Player, OwningEnemy->SearchRange);
 	TargetBaseCharacter = Cast<AGccBaseCharacter>(ClosestActor);
 
 	if(!TargetBaseCharacter.IsValid())
 	{
-		PRINT_DEBUG("no valid target found");
 		StartSearch();
 		return;
 	}
@@ -99,8 +95,6 @@ void UGccSearchForTarget::MoveToTargetAndAttack()
 		return;
 	}
 
-	PRINT_DEBUG("Moving to target");
-
 	MoveToLocationOrActorTask = UAITask_MoveTo::AIMoveTo(OwningAIController.Get(), FVector(), TargetBaseCharacter.Get(), OwningEnemy->AcceptanceRadius);
 	MoveToLocationOrActorTask->OnMoveTaskFinished.AddUObject(this, &ThisClass::AttackTarget);
 	MoveToLocationOrActorTask->ConditionalPerformMove();
@@ -110,12 +104,9 @@ void UGccSearchForTarget::AttackTarget(TEnumAsByte<EPathFollowingResult::Type> R
 {
 	if(Result != EPathFollowingResult::Success)
 	{
-		PRINT_DEBUG("Move failed, restarting search");
 		StartSearch();
 		return;
 	}
-
-	PRINT_DEBUG("Reached target, preparing attack");
 
 	OwningEnemy->RotateToTarget(TargetBaseCharacter.Get());
 
@@ -140,10 +131,7 @@ void UGccSearchForTarget::Attack()
 
 	if(!GetAbilitySystemComponentFromActorInfo()->TryActivateAbilitiesByTag(AttackTag.GetSingleTagContainer()))
 	{
-		PRINT_DEBUG("Attack could not activate, restarting search");
 		StartSearch();
 		return;
 	}
-
-	PRINT_DEBUG("Attack activated");
 }
